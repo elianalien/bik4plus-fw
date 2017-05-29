@@ -61,7 +61,10 @@ int main(int argc, char* argv[])
 
 		RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, DISABLE);
 		RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, DISABLE);
-		__WFI();
+
+//		__WFE();
+//		PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFE);
+		PWR_EnterSTANDBYMode();
 	}
 }
 

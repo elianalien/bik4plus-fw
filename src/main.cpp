@@ -9,17 +9,20 @@
 #include <stdlib.h>
 
 #include "stm32f10x.h"
+#include "stm32f10x_pwr.h"
+#include "stm32f10x_rtc.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wmissing-declarations"
 #pragma GCC diagnostic ignored "-Wreturn-type"
 
-void initialize()
+void initRtc()
 {
-	// ---------------------
-	// Configure GPIO
-	// ---------------------
+}
+
+void initGpio()
+{
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
 
@@ -41,17 +44,24 @@ void initialize()
 
 int main(int argc, char* argv[])
 {
-	initialize();
+	initGpio();
+	initRtc();
 
 	// Infinite loop
 	while (1) {
 		asm("nop");
 
-		GPIO_WriteBit(GPIOB, GPIO_Pin_12,
-				(BitAction) !GPIO_ReadOutputDataBit(GPIOB, GPIO_Pin_12));
+		for (unsigned count = 0; count < 5; count++) {
+			GPIO_WriteBit(GPIOB, GPIO_Pin_12,
+					(BitAction) !GPIO_ReadOutputDataBit(GPIOB, GPIO_Pin_12));
 
-		// Approx. 1 sec delay on 72 MHz
-		for (volatile unsigned int i = 0; i < 4000000; i++);
+			// Approx. 1 sec delay on 72 MHz
+			for (volatile unsigned int i = 0; i < 4000000; i++);
+		}
+
+		RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, DISABLE);
+		RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, DISABLE);
+		__WFI();
 	}
 }
 

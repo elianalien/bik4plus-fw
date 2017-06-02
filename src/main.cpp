@@ -83,12 +83,13 @@ int main(int argc, char* argv[])
 
 		// Based on http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.faqs/ka15506.html
 		// The sequence SEV WFE WFE is used to ensure sleep
-		SCB->SCR &= ~SCB_SCR_SLEEPDEEP;
-		__SEV();
-		__WFE();
-		__WFE();
-//		PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFE);
+//		SCB->SCR &= ~SCB_SCR_SLEEPDEEP;
+//		__SEV();
+//		__WFE();
+//		__WFE();
+		PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFE);
 //		PWR_EnterSTANDBYMode();
+		SystemInit();
 	}
 }
 

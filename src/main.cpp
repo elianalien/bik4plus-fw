@@ -97,25 +97,26 @@ int main(int argc, char* argv[])
 	// Infinite loop
 	while (1) {
 //		GPIO_WriteBit(GPIOB, GPIO_Pin_12, (BitAction) GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_11));
-//		GPIO_WriteBit(GPIOB, GPIO_Pin_12, Bit_SET);
-//		for (unsigned count = 0; count < 10; count++) {
+		GPIO_WriteBit(GPIOB, GPIO_Pin_12, Bit_SET);
+		for (unsigned count = 0; count < 10; count++) {
 			GPIO_WriteBit(GPIOB, GPIO_Pin_12,
 					(BitAction) !GPIO_ReadOutputDataBit(GPIOB, GPIO_Pin_12));
-			while (!RTC_GetFlagStatus(RTC_FLAG_SEC));
-			RTC_ClearFlag(RTC_FLAG_SEC);
-//
-//			Ticks::DelayMs(100);
-//		}
+
+			Ticks::DelayMs(100);
+		}
+
+		RTC_SetAlarm(RTC_GetCounter() + 3);
+		RTC_WaitForLastTask();
 
 //		RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, DISABLE);
 //		RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, DISABLE);
 
 		// Based on http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.faqs/ka15506.html
 		// The sequence SEV WFE WFE is used to ensure sleep
-//		SCB->SCR &= ~SCB_SCR_SLEEPDEEP;
-//		__SEV();
-//		__WFE();
-//		__WFE();
+		SCB->SCR &= ~SCB_SCR_SLEEPDEEP;
+		__SEV();
+		__WFE();
+		__WFE();
 //		PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFE);
 //		PWR_EnterSTANDBYMode();
 //		SystemInit();

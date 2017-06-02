@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "util/Ticks.h"
+
 #include "stm32f10x.h"
 #include "stm32f10x_pwr.h"
 #include "stm32f10x_rtc.h"
@@ -46,25 +48,23 @@ int main(int argc, char* argv[])
 {
 	initGpio();
 	initRtc();
+	Ticks::Init();
 
 	// Infinite loop
 	while (1) {
-		asm("nop");
-
-		for (unsigned count = 0; count < 5; count++) {
+		for (unsigned count = 0; count < 10; count++) {
 			GPIO_WriteBit(GPIOB, GPIO_Pin_12,
 					(BitAction) !GPIO_ReadOutputDataBit(GPIOB, GPIO_Pin_12));
 
-			// Approx. 1 sec delay on 72 MHz
-			for (volatile unsigned int i = 0; i < 4000000; i++);
+			Ticks::DelayMs(250);
 		}
 
-		RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, DISABLE);
-		RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, DISABLE);
+//		RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, DISABLE);
+//		RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, DISABLE);
 
 //		__WFE();
 //		PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFE);
-		PWR_EnterSTANDBYMode();
+//		PWR_EnterSTANDBYMode();
 	}
 }
 

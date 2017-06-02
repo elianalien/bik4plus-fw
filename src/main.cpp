@@ -22,6 +22,28 @@
 
 void initRtc()
 {
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR | RCC_APB1Periph_BKP, ENABLE);
+	PWR_BackupAccessCmd(ENABLE);
+	BKP_DeInit();
+
+	RCC_LSICmd(ENABLE);
+	while (!RCC_GetFlagStatus(RCC_FLAG_LSIRDY));
+
+	RCC_RTCCLKConfig(RCC_RTCCLKSource_LSI);
+	RCC_RTCCLKCmd(ENABLE);
+	RTC_WaitForSynchro();
+
+	// LSI clock freq is "around" 40 kHz (30 ~ 60 kHz)
+	RTC_SetPrescaler(40000 - 1);
+	RTC_WaitForLastTask();
+
+	RTC_ITConfig(RTC_IT_ALR, ENABLE);
+	RTC_WaitForLastTask();
+
+	// Enable RTC clock output: RTCCLK/64 on PC13
+	PWR_BackupAccessCmd(ENABLE);
+	BKP_TamperPinCmd(DISABLE);
+	BKP_RTCOutputConfig(BKP_RTCOutputSource_CalibClock);
 }
 
 void initGpio()
@@ -69,14 +91,14 @@ int main(int argc, char* argv[])
 
 	// Infinite loop
 	while (1) {
-//		GPIO_WriteBit(GPIOB, GPIO_Pin_12, (BitAction) GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_11));
-		GPIO_WriteBit(GPIOB, GPIO_Pin_12, Bit_SET);
-		for (unsigned count = 0; count < 10; count++) {
-			GPIO_WriteBit(GPIOB, GPIO_Pin_12,
-					(BitAction) !GPIO_ReadOutputDataBit(GPIOB, GPIO_Pin_12));
-
-			Ticks::DelayMs(100);
-		}
+		GPIO_WriteBit(GPIOB, GPIO_Pin_12, (BitAction) GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_11));
+//		GPIO_WriteBit(GPIOB, GPIO_Pin_12, Bit_SET);
+//		for (unsigned count = 0; count < 10; count++) {
+//			GPIO_WriteBit(GPIOB, GPIO_Pin_12,
+//					(BitAction) !GPIO_ReadOutputDataBit(GPIOB, GPIO_Pin_12));
+//
+//			Ticks::DelayMs(100);
+//		}
 
 //		RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, DISABLE);
 //		RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, DISABLE);
@@ -87,9 +109,9 @@ int main(int argc, char* argv[])
 //		__SEV();
 //		__WFE();
 //		__WFE();
-		PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFE);
+//		PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFE);
 //		PWR_EnterSTANDBYMode();
-		SystemInit();
+//		SystemInit();
 	}
 }
 

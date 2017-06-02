@@ -37,13 +37,18 @@ void initRtc()
 	RTC_SetPrescaler(40000 - 1);
 	RTC_WaitForLastTask();
 
-	RTC_ITConfig(RTC_IT_ALR, ENABLE);
-	RTC_WaitForLastTask();
-
 	// Enable RTC clock output: RTCCLK/64 on PC13
 	PWR_BackupAccessCmd(ENABLE);
 	BKP_TamperPinCmd(DISABLE);
 	BKP_RTCOutputConfig(BKP_RTCOutputSource_CalibClock);
+
+	// Connect RTC Alarm event to EXTI
+	EXTI_InitTypeDef EXTI_InitStruct;
+	EXTI_InitStruct.EXTI_Line = EXTI_Line17;
+	EXTI_InitStruct.EXTI_LineCmd = ENABLE;
+	EXTI_InitStruct.EXTI_Mode = EXTI_Mode_Event;
+	EXTI_InitStruct.EXTI_Trigger = EXTI_Trigger_Rising;
+	EXTI_Init(&EXTI_InitStruct);
 }
 
 void initGpio()
@@ -91,11 +96,13 @@ int main(int argc, char* argv[])
 
 	// Infinite loop
 	while (1) {
-		GPIO_WriteBit(GPIOB, GPIO_Pin_12, (BitAction) GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_11));
+//		GPIO_WriteBit(GPIOB, GPIO_Pin_12, (BitAction) GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_11));
 //		GPIO_WriteBit(GPIOB, GPIO_Pin_12, Bit_SET);
 //		for (unsigned count = 0; count < 10; count++) {
-//			GPIO_WriteBit(GPIOB, GPIO_Pin_12,
-//					(BitAction) !GPIO_ReadOutputDataBit(GPIOB, GPIO_Pin_12));
+			GPIO_WriteBit(GPIOB, GPIO_Pin_12,
+					(BitAction) !GPIO_ReadOutputDataBit(GPIOB, GPIO_Pin_12));
+			while (!RTC_GetFlagStatus(RTC_FLAG_SEC));
+			RTC_ClearFlag(RTC_FLAG_SEC);
 //
 //			Ticks::DelayMs(100);
 //		}

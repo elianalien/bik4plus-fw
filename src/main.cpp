@@ -8,12 +8,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "3rdparty/MFRC522.h"
 #include "util/Ticks.h"
 
 #include "stm32f10x.h"
 #include "stm32f10x_exti.h"
 #include "stm32f10x_pwr.h"
 #include "stm32f10x_rtc.h"
+#include "stm32f10x_spi.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
@@ -88,11 +90,48 @@ void initGpio()
 	EXTI_Init(&EXTI_InitStruct);
 }
 
+void initSpi()
+{
+	GPIO_InitTypeDef GPIO_InitStruct;
+
+	// SPI pins: PA5 (SCK), PA6 (MISO), PA7 (MOSI)
+	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7;
+	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF_PP;
+	GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+	// PA4 (NSS): software controlled
+	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_4;
+	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_Out_PP;
+	GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_Init(GPIOA, &GPIO_InitStruct);
+	GPIO_SetBits(GPIOA, GPIO_Pin_4);
+
+	// SPI
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE);
+	SPI_InitTypeDef SPI_InitStruct;
+	SPI_InitStruct.SPI_Mode = SPI_Mode_Master;
+	SPI_InitStruct.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_32;
+	SPI_InitStruct.SPI_CPHA = SPI_CPHA_1Edge;
+	SPI_InitStruct.SPI_CPOL = SPI_CPOL_Low;
+	SPI_InitStruct.SPI_DataSize = SPI_DataSize_8b;
+	SPI_InitStruct.SPI_FirstBit = SPI_FirstBit_MSB;
+	SPI_InitStruct.SPI_NSS = SPI_NSS_Soft;
+	SPI_InitStruct.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
+	SPI_Init(SPI1, &SPI_InitStruct);
+	SPI_SSOutputCmd(SPI1, ENABLE);
+	SPI_Cmd(SPI1, ENABLE);
+}
+
 int main(int argc, char* argv[])
 {
+	Ticks::Init();
 	initGpio();
 	initRtc();
-	Ticks::Init();
+	initSpi();
+
+	MFRC522 rfid(SPI1, GPIOA, GPIO_Pin_4);
+	rfid.PCD_Init();
 
 	// Infinite loop
 	while (1) {

@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "3rdparty/MFRC522.h"
 #include "util/Ticks.h"
@@ -74,6 +75,19 @@ void initGpio()
 	GPIO_Init(GPIOA, &GPIO_InitStruct);
 	RCC_MCOConfig(RCC_MCO_SYSCLK);
 
+	// SPI pins: PA5 (SCK), PA6 (MISO), PA7 (MOSI)
+	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7;
+	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF_PP;
+	GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+	// PA4 (NSS): software controlled
+	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_4;
+	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_Out_PP;
+	GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_Init(GPIOA, &GPIO_InitStruct);
+	GPIO_SetBits(GPIOA, GPIO_Pin_4);
+
 	// External event
 	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_11;
 	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IPU;
@@ -92,22 +106,6 @@ void initGpio()
 
 void initSpi()
 {
-	GPIO_InitTypeDef GPIO_InitStruct;
-
-	// SPI pins: PA5 (SCK), PA6 (MISO), PA7 (MOSI)
-	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7;
-	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF_PP;
-	GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-	// PA4 (NSS): software controlled
-	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_4;
-	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_Out_PP;
-	GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_Init(GPIOA, &GPIO_InitStruct);
-	GPIO_SetBits(GPIOA, GPIO_Pin_4);
-
-	// SPI
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE);
 	SPI_InitTypeDef SPI_InitStruct;
 	SPI_InitStruct.SPI_Mode = SPI_Mode_Master;
@@ -130,22 +128,40 @@ int main(int argc, char* argv[])
 	initRtc();
 	initSpi();
 
+	uint8_t uidByteOn[] = {0xE5, 0x95, 0x15};
+	uint8_t uidByteOff[] = {0x5D, 0x0C, 0x88};
+	MFRC522::MIFARE_Key key = {{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}};
+
 	MFRC522 rfid(SPI1, GPIOA, GPIO_Pin_4);
 	rfid.PCD_Init();
 
 	// Infinite loop
 	while (1) {
 //		GPIO_WriteBit(GPIOB, GPIO_Pin_12, (BitAction) GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_11));
-		GPIO_WriteBit(GPIOB, GPIO_Pin_12, Bit_SET);
-		for (unsigned count = 0; count < 10; count++) {
-			GPIO_WriteBit(GPIOB, GPIO_Pin_12,
-					(BitAction) !GPIO_ReadOutputDataBit(GPIOB, GPIO_Pin_12));
+//		GPIO_WriteBit(GPIOB, GPIO_Pin_12, Bit_SET);
+//		for (unsigned count = 0; count < 10; count++) {
+//			GPIO_WriteBit(GPIOB, GPIO_Pin_12,
+//					(BitAction) !GPIO_ReadOutputDataBit(GPIOB, GPIO_Pin_12));
+//
+//			Ticks::DelayMs(100);
+//		}
 
-			Ticks::DelayMs(100);
+		if (!rfid.PICC_IsNewCardPresent()) continue;
+		if (!rfid.PICC_ReadCardSerial()) continue;
+		MFRC522::Uid uid = rfid.uid;
+		MFRC522::StatusCode status;
+		status = rfid.PCD_Authenticate(MFRC522::PICC_CMD_MF_AUTH_KEY_A, 7, &key, &uid);
+		if (status == MFRC522::STATUS_OK) {
+			if (memcmp(uidByteOn, uid.uidByte, 3) == 0) {
+				GPIO_SetBits(GPIOB, GPIO_Pin_12);
+			} else if (memcmp(uidByteOff, uid.uidByte, 3) == 0) {
+				GPIO_ResetBits(GPIOB, GPIO_Pin_12);
+			}
+			rfid.PCD_StopCrypto1();
 		}
 
-		RTC_SetAlarm(RTC_GetCounter() + 2);
-		RTC_WaitForLastTask();
+//		RTC_SetAlarm(RTC_GetCounter() + 2);
+//		RTC_WaitForLastTask();
 
 //		RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, DISABLE);
 //		RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, DISABLE);
@@ -156,9 +172,9 @@ int main(int argc, char* argv[])
 //		__SEV();
 //		__WFE();
 //		__WFE();
-		PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFE);
+//		PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFE);
 //		PWR_EnterSTANDBYMode();
-		SystemInit();
+//		SystemInit();
 	}
 }
 

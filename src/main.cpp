@@ -160,18 +160,18 @@ int main(int argc, char* argv[])
 			rfid.PCD_StopCrypto1();
 		}
 
-//		RTC_SetAlarm(RTC_GetCounter() + 2);
-//		RTC_WaitForLastTask();
+		RTC_SetAlarm(RTC_GetCounter() + 1);
+		RTC_WaitForLastTask();
 
 //		RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, DISABLE);
 //		RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, DISABLE);
 
 		// Based on http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.faqs/ka15506.html
 		// The sequence SEV WFE WFE is used to ensure sleep
-//		SCB->SCR &= ~SCB_SCR_SLEEPDEEP;
-//		__SEV();
-//		__WFE();
-//		__WFE();
+		SCB->SCR &= ~SCB_SCR_SLEEPDEEP;
+		__SEV();
+		__WFE();
+		__WFE();
 //		PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFE);
 //		PWR_EnterSTANDBYMode();
 //		SystemInit();

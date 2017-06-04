@@ -41,9 +41,9 @@ void initRtc()
 	RTC_WaitForLastTask();
 
 	// Enable RTC clock output: RTCCLK/64 on PC13
-	PWR_BackupAccessCmd(ENABLE);
-	BKP_TamperPinCmd(DISABLE);
-	BKP_RTCOutputConfig(BKP_RTCOutputSource_CalibClock);
+//	PWR_BackupAccessCmd(ENABLE);
+//	BKP_TamperPinCmd(DISABLE);
+//	BKP_RTCOutputConfig(BKP_RTCOutputSource_CalibClock);
 
 	// Connect RTC Alarm event to EXTI
 	EXTI_InitTypeDef EXTI_InitStruct;
@@ -146,18 +146,18 @@ int main(int argc, char* argv[])
 //			Ticks::DelayMs(100);
 //		}
 
-		if (!rfid.PICC_IsNewCardPresent()) continue;
-		if (!rfid.PICC_ReadCardSerial()) continue;
-		MFRC522::Uid uid = rfid.uid;
-		MFRC522::StatusCode status;
-		status = rfid.PCD_Authenticate(MFRC522::PICC_CMD_MF_AUTH_KEY_A, 7, &key, &uid);
-		if (status == MFRC522::STATUS_OK) {
-			if (memcmp(uidByteOn, uid.uidByte, 3) == 0) {
-				GPIO_SetBits(GPIOB, GPIO_Pin_12);
-			} else if (memcmp(uidByteOff, uid.uidByte, 3) == 0) {
-				GPIO_ResetBits(GPIOB, GPIO_Pin_12);
+		if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()) {
+			MFRC522::Uid uid = rfid.uid;
+			MFRC522::StatusCode status;
+			status = rfid.PCD_Authenticate(MFRC522::PICC_CMD_MF_AUTH_KEY_A, 7, &key, &uid);
+			if (status == MFRC522::STATUS_OK) {
+				if (memcmp(uidByteOn, uid.uidByte, 3) == 0) {
+					GPIO_SetBits(GPIOB, GPIO_Pin_12);
+				} else if (memcmp(uidByteOff, uid.uidByte, 3) == 0) {
+					GPIO_ResetBits(GPIOB, GPIO_Pin_12);
+				}
+				rfid.PCD_StopCrypto1();
 			}
-			rfid.PCD_StopCrypto1();
 		}
 
 		RTC_SetAlarm(RTC_GetCounter() + 1);
@@ -168,13 +168,13 @@ int main(int argc, char* argv[])
 
 		// Based on http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.faqs/ka15506.html
 		// The sequence SEV WFE WFE is used to ensure sleep
-		SCB->SCR &= ~SCB_SCR_SLEEPDEEP;
-		__SEV();
-		__WFE();
-		__WFE();
-//		PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFE);
+//		SCB->SCR &= ~SCB_SCR_SLEEPDEEP;
+//		__SEV();
+//		__WFE();
+//		__WFE();
+		PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFE);
 //		PWR_EnterSTANDBYMode();
-//		SystemInit();
+		SystemInit();
 	}
 }
 

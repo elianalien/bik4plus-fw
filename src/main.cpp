@@ -146,6 +146,7 @@ int main(int argc, char* argv[])
 //			Ticks::DelayMs(100);
 //		}
 
+		rfid.PCD_Init();
 		if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()) {
 			MFRC522::Uid uid = rfid.uid;
 			MFRC522::StatusCode status;
@@ -159,6 +160,7 @@ int main(int argc, char* argv[])
 				rfid.PCD_StopCrypto1();
 			}
 		}
+		rfid.PCD_SoftPowerDown();
 
 		RTC_SetAlarm(RTC_GetCounter() + 1);
 		RTC_WaitForLastTask();

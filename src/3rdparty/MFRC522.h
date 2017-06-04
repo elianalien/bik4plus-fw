@@ -25,6 +25,8 @@ public:
 	virtual void PCD_Init();
 	virtual void PCD_Reset();
 
+	void PCD_SoftPowerDown();
+
 private:
 	uint8_t spiTransfer(uint8_t data);
 

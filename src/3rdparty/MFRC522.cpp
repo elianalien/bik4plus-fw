@@ -169,4 +169,11 @@ void MFRC522::PCD_Reset() {
 	}
 } // End PCD_Reset()
 
+void MFRC522::PCD_SoftPowerDown() {
+	while ((PCD_ReadRegister(CommandReg) & PCD_NoCmdChange) == PCD_SoftReset) {
+		// PowerDown bit cannot be set when the SoftReset command is activated
+	}
+	PCD_WriteRegister(CommandReg, PCD_NoCmdChange | (1<<4));
+} // End PCD_PowerDown
+
 #pragma GCC diagnostic pop

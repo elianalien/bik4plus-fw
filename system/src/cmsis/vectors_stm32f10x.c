@@ -7,6 +7,9 @@
 
 #include "cortexm/ExceptionHandlers.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
+
 // ----------------------------------------------------------------------------
 
 void __attribute__((weak))
@@ -890,3 +893,5 @@ Default_Handler(void)
 }
 
 // ----------------------------------------------------------------------------
+
+#pragma GCC diagnostic pop

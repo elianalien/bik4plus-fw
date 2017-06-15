@@ -9,8 +9,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "3rdparty/MFRC522.h"
-#include "util/Ticks.h"
+#include "MFRC522.h"
+#include "OmniLock.h"
+#include "Ticks.h"
 
 #include "stm32f10x.h"
 #include "stm32f10x_exti.h"
@@ -132,11 +133,25 @@ int main(int argc, char* argv[])
 	uint8_t uidByteOff[] = {0x5D, 0x0C, 0x88};
 	MFRC522::MIFARE_Key key = {{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}};
 
-	MFRC522 rfid(SPI1, GPIOA, GPIO_Pin_4);
-	rfid.PCD_Init();
+	OmniLock::HardwareConfig hw;
+	hw.GpioMotorA = GPIOA;
+	hw.PinMotorA = GPIO_Pin_10;
+	hw.GpioMotorB = GPIOA;
+	hw.PinMotorB = GPIO_Pin_11;
+	hw.GpioSwitchStep = GPIOA;
+	hw.PinSwitchStep = GPIO_Pin_15;
+	hw.GpioSwitchClosed = GPIOA;
+	hw.PinSwitchClosed = GPIO_Pin_12;
+	OmniLock omni(hw);
+
+//	MFRC522 rfid(SPI1, GPIOA, GPIO_Pin_4);
+//	rfid.PCD_Init();
 
 	// Infinite loop
 	while (1) {
+		omni.MoveOneStep();
+		__NOP();
+
 //		GPIO_WriteBit(GPIOB, GPIO_Pin_12, (BitAction) GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_11));
 //		GPIO_WriteBit(GPIOB, GPIO_Pin_12, Bit_SET);
 //		for (unsigned count = 0; count < 10; count++) {
@@ -146,24 +161,24 @@ int main(int argc, char* argv[])
 //			Ticks::DelayMs(100);
 //		}
 
-		rfid.PCD_Init();
-		if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()) {
-			MFRC522::Uid uid = rfid.uid;
-			MFRC522::StatusCode status;
-			status = rfid.PCD_Authenticate(MFRC522::PICC_CMD_MF_AUTH_KEY_A, 7, &key, &uid);
-			if (status == MFRC522::STATUS_OK) {
-				if (memcmp(uidByteOn, uid.uidByte, 3) == 0) {
-					GPIO_SetBits(GPIOB, GPIO_Pin_12);
-				} else if (memcmp(uidByteOff, uid.uidByte, 3) == 0) {
-					GPIO_ResetBits(GPIOB, GPIO_Pin_12);
-				}
-				rfid.PCD_StopCrypto1();
-			}
-		}
-		rfid.PCD_SoftPowerDown();
-
-		RTC_SetAlarm(RTC_GetCounter() + 1);
-		RTC_WaitForLastTask();
+//		rfid.PCD_Init();
+//		if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()) {
+//			MFRC522::Uid uid = rfid.uid;
+//			MFRC522::StatusCode status;
+//			status = rfid.PCD_Authenticate(MFRC522::PICC_CMD_MF_AUTH_KEY_A, 7, &key, &uid);
+//			if (status == MFRC522::STATUS_OK) {
+//				if (memcmp(uidByteOn, uid.uidByte, 3) == 0) {
+//					GPIO_SetBits(GPIOB, GPIO_Pin_12);
+//				} else if (memcmp(uidByteOff, uid.uidByte, 3) == 0) {
+//					GPIO_ResetBits(GPIOB, GPIO_Pin_12);
+//				}
+//				rfid.PCD_StopCrypto1();
+//			}
+//		}
+//		rfid.PCD_SoftPowerDown();
+//
+//		RTC_SetAlarm(RTC_GetCounter() + 1);
+//		RTC_WaitForLastTask();
 
 //		RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, DISABLE);
 //		RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, DISABLE);
@@ -174,9 +189,9 @@ int main(int argc, char* argv[])
 //		__SEV();
 //		__WFE();
 //		__WFE();
-		PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFE);
+//		PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFE);
 //		PWR_EnterSTANDBYMode();
-		SystemInit();
+//		SystemInit();
 	}
 }
 

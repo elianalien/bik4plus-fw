@@ -29,11 +29,15 @@ public:
 
 	void DriveMotor(int dir);
 
+	void Initialize();
+
 	void Unlock();
 	void Lock();
 	bool IsOnStep();
 	bool IsGateClosed();
-	void MoveOneStep();
+
+private:
+	void moveOneStep(bool fwd);
 
 private:
 	GPIO_TypeDef* m_GpioMotorA;
@@ -49,6 +53,11 @@ private:
 	GPIO_TypeDef* m_GpioSwitchClosed;
 	uint16_t m_PinSwitchClosed;
 	DebouncedInput m_InputClosed;
+
+	enum {
+		Free,
+		Locked
+	} m_State;
 };
 
 #endif /* OMNILOCK_H_ */

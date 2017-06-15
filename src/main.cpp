@@ -144,12 +144,21 @@ int main(int argc, char* argv[])
 	hw.PinSwitchClosed = GPIO_Pin_12;
 	OmniLock omni(hw);
 
+	omni.Initialize();
+
 //	MFRC522 rfid(SPI1, GPIOA, GPIO_Pin_4);
 //	rfid.PCD_Init();
 
 	// Infinite loop
 	while (1) {
-		omni.MoveOneStep();
+//		omni.MoveOneStep(true);
+		omni.Lock();
+		omni.Unlock();
+		omni.Unlock();
+		omni.Lock();
+		omni.Lock();
+		omni.Unlock();
+		omni.Lock();
 		__NOP();
 
 //		GPIO_WriteBit(GPIOB, GPIO_Pin_12, (BitAction) GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_11));

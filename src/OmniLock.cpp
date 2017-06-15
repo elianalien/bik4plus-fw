@@ -3,6 +3,7 @@
  */
 
 #include "OmniLock.h"
+#include "Ticks.h"
 #include "stm32f10x.h"
 
 OmniLock::OmniLock(HardwareConfig& hw):
@@ -58,15 +59,42 @@ void OmniLock::DriveMotor(int dir)
 
 void OmniLock::Unlock()
 {
+	if (m_State == Free) moveOneStep(true);
+	moveOneStep(true);
+	m_State = Free;
 }
 
 void OmniLock::Lock()
 {
+	if (m_State == Locked) return;
+	moveOneStep(true);
+	m_State = Locked;
 }
 
-void OmniLock::MoveOneStep()
+void OmniLock::Initialize()
 {
-	DriveMotor(1);
+	// This logic works only when no locking gate is present
+	moveOneStep(true);
+	uint32_t tick0 = Ticks::Get();
+	moveOneStep(true);
+	uint32_t tick1 = Ticks::Get();
+	moveOneStep(true);
+	uint32_t tick2 = Ticks::Get();
+
+	// Always start at free position
+	if ((tick1 - tick0) < (tick2 - tick1)) {
+		// We are at the first position (free)
+	} else {
+		// We are at the second position (locked)
+		moveOneStep(false);
+	}
+	m_State = Free;
+}
+
+void OmniLock::moveOneStep(bool fwd)
+{
+	DriveMotor(fwd? 1: -1);
+	while (!m_InputStep.Debounce(IsOnStep()));
 	while (m_InputStep.Debounce(IsOnStep()));
 	while (!m_InputStep.Debounce(IsOnStep()));
 	DriveMotor(0);

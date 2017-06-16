@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "Beeper.h"
 #include "MFRC522.h"
 #include "OmniLock.h"
 #include "Ticks.h"
@@ -151,6 +152,9 @@ int main(int argc, char* argv[])
 	MFRC522 rfid(SPI1, GPIOA, GPIO_Pin_4);
 	rfid.PCD_Init();
 
+	Beeper beeper(GPIOB, GPIO_Pin_8);
+	beeper.BeepOnce();
+
 	// Infinite loop
 	while (1) {
 //		GPIO_WriteBit(GPIOB, GPIO_Pin_12, (BitAction) GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_11));
@@ -170,10 +174,12 @@ int main(int argc, char* argv[])
 			if (status == MFRC522::STATUS_OK) {
 				if (memcmp(uidByteOn, uid.uidByte, 3) == 0) {
 					GPIO_SetBits(GPIOB, GPIO_Pin_12);
+					beeper.Beep(3, 50, 50);
 					omni.Unlock();
 				} else if (memcmp(uidByteOff, uid.uidByte, 3) == 0) {
 					GPIO_ResetBits(GPIOB, GPIO_Pin_12);
 					omni.Lock();
+					beeper.BeepOnce(500);
 				}
 				rfid.PCD_StopCrypto1();
 			}

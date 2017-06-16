@@ -132,8 +132,10 @@ int main(int argc, char* argv[])
 
 	GPIO_ReadOutputData(GPIOA);  // Somehow this nonsense prevents MemManage fault
 
-	uint8_t uidByteOn[] = {0xE5, 0x95, 0x15};
-	uint8_t uidByteOff[] = {0x5D, 0x0C, 0x88};
+//	uint8_t uidByteOn[] = {0xE5, 0x95, 0x15};
+//	uint8_t uidByteOff[] = {0x5D, 0x0C, 0x88};
+	uint8_t uidByteOn[] = {0x8C, 0x1B, 0xDC};
+	uint8_t uidByteOff[] = {0xA2, 0x4F, 0xA0};
 	MFRC522::MIFARE_Key key = {{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}};
 
 	OmniLock::HardwareConfig hw;

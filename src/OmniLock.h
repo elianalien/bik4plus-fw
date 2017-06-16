@@ -33,6 +33,7 @@ public:
 
 	void Unlock();
 	void Lock();
+	bool IsLocked();
 	bool IsOnStep();
 	bool IsGateClosed();
 

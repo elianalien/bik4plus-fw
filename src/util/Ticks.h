@@ -15,7 +15,7 @@ class Ticks
 public:
 	static void Init();
 	static uint32_t Get();
-	static bool HasElapsed(int32_t tp);
+	static bool HasElapsed(int32_t ticks);
 	static void DelayUs(uint32_t us);
 	static void DelayMs(uint32_t ms);
 	static uint32_t UsToTicks(uint32_t us);

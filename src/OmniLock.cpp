@@ -91,6 +91,11 @@ void OmniLock::Initialize()
 	m_State = Free;
 }
 
+bool OmniLock::IsLocked()
+{
+	return m_State == Locked;
+}
+
 void OmniLock::moveOneStep(bool fwd)
 {
 	DriveMotor(fwd? 1: -1);

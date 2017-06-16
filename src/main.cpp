@@ -90,7 +90,7 @@ void initGpio()
 	GPIO_Init(GPIOA, &GPIO_InitStruct);
 	GPIO_SetBits(GPIOA, GPIO_Pin_4);
 
-	// External event
+	// External event: lock request
 	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_11;
 	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IPU;
 	GPIO_InitStruct.GPIO_Speed = GPIO_Speed_2MHz;
@@ -104,6 +104,12 @@ void initGpio()
 	EXTI_InitStruct.EXTI_Mode = EXTI_Mode_Event;
 	EXTI_InitStruct.EXTI_Trigger = EXTI_Trigger_Falling;
 	EXTI_Init(&EXTI_InitStruct);
+
+	// Unlock request (simulate server request)
+	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_10;
+	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IPU;
+	GPIO_InitStruct.GPIO_Speed = GPIO_Speed_2MHz;
+	GPIO_Init(GPIOB, &GPIO_InitStruct);
 }
 
 void initSpi()
@@ -168,25 +174,42 @@ int main(int argc, char* argv[])
 //			Ticks::DelayMs(50);
 //		}
 
-		rfid.PCD_Init();
-		if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()) {
-			MFRC522::Uid uid = rfid.uid;
-			MFRC522::StatusCode status;
-			status = rfid.PCD_Authenticate(MFRC522::PICC_CMD_MF_AUTH_KEY_A, 7, &key, &uid);
-			if (status == MFRC522::STATUS_OK) {
-				if (memcmp(uidByteOn, uid.uidByte, 3) == 0) {
-					GPIO_SetBits(GPIOB, GPIO_Pin_12);
-					beeper.Beep(3, 50, 50);
-					omni.Unlock();
-				} else if (memcmp(uidByteOff, uid.uidByte, 3) == 0) {
+		if (!GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_10)) {
+			// Unlock request (from server)
+			if (omni.IsLocked()) {
+				beeper.Beep(3, 50, 30);
+				omni.Unlock();
+			}
+		} else if (!GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_11)) {
+			// Lock request (from pole switch)
+			if (!omni.IsLocked()) {
+				rfid.PCD_Init();
+				bool tagFound = false;
+				uint32_t timeout = Ticks::Get() + Ticks::MsToTicks(500);
+				while (!Ticks::HasElapsed(timeout) && !tagFound) {
+					if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()) {
+						MFRC522::Uid uid = rfid.uid;
+						MFRC522::StatusCode status;
+						status = rfid.PCD_Authenticate(MFRC522::PICC_CMD_MF_AUTH_KEY_A, 7, &key, &uid);
+						if (status == MFRC522::STATUS_OK) {
+							if (memcmp(uidByteOn, uid.uidByte, 3) == 0) {
+								tagFound = true;
+							}
+							rfid.PCD_StopCrypto1();
+						}
+					}
+				}
+				rfid.PCD_SoftPowerDown();
+
+				if (tagFound) {
 					GPIO_ResetBits(GPIOB, GPIO_Pin_12);
 					omni.Lock();
 					beeper.BeepOnce(500);
+				} else {
+					beeper.Beep(5, 50, 30);
 				}
-				rfid.PCD_StopCrypto1();
 			}
 		}
-		rfid.PCD_SoftPowerDown();
 
 		RTC_SetAlarm(RTC_GetCounter() + 1);
 		RTC_WaitForLastTask();

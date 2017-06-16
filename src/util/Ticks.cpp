@@ -18,9 +18,9 @@ uint32_t Ticks::Get()
 	return DWT->CYCCNT;
 }
 
-bool Ticks::HasElapsed(int32_t tp)
+bool Ticks::HasElapsed(int32_t ticks)
 {
-	return (((int32_t) (Get()) - tp) >= 0);
+	return (((int32_t) (Get()) - ticks) >= 0);
 }
 
 void Ticks::DelayUs(uint32_t us)

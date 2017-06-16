@@ -7,7 +7,7 @@
 #include "stm32f10x.h"
 
 OmniLock::OmniLock(HardwareConfig& hw):
-m_InputStep(300), m_InputClosed(300)
+m_InputStep(5000), m_InputClosed(5000)
 {
 	m_GpioMotorA = hw.GpioMotorA;
 	m_PinMotorA = hw.PinMotorA;

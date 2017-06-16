@@ -129,6 +129,8 @@ int main(int argc, char* argv[])
 	initRtc();
 	initSpi();
 
+	GPIO_ReadOutputData(GPIOA);  // Somehow this nonsense prevents MemManage fault
+
 	uint8_t uidByteOn[] = {0xE5, 0x95, 0x15};
 	uint8_t uidByteOff[] = {0x5D, 0x0C, 0x88};
 	MFRC522::MIFARE_Key key = {{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}};
@@ -146,61 +148,47 @@ int main(int argc, char* argv[])
 
 	omni.Initialize();
 
-//	MFRC522 rfid(SPI1, GPIOA, GPIO_Pin_4);
-//	rfid.PCD_Init();
+	MFRC522 rfid(SPI1, GPIOA, GPIO_Pin_4);
+	rfid.PCD_Init();
 
 	// Infinite loop
 	while (1) {
-//		omni.MoveOneStep(true);
-		omni.Lock();
-		omni.Unlock();
-		omni.Unlock();
-		omni.Lock();
-		omni.Lock();
-		omni.Unlock();
-		omni.Lock();
-		__NOP();
-
 //		GPIO_WriteBit(GPIOB, GPIO_Pin_12, (BitAction) GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_11));
 //		GPIO_WriteBit(GPIOB, GPIO_Pin_12, Bit_SET);
 //		for (unsigned count = 0; count < 10; count++) {
 //			GPIO_WriteBit(GPIOB, GPIO_Pin_12,
 //					(BitAction) !GPIO_ReadOutputDataBit(GPIOB, GPIO_Pin_12));
 //
-//			Ticks::DelayMs(100);
+//			Ticks::DelayMs(50);
 //		}
 
-//		rfid.PCD_Init();
-//		if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()) {
-//			MFRC522::Uid uid = rfid.uid;
-//			MFRC522::StatusCode status;
-//			status = rfid.PCD_Authenticate(MFRC522::PICC_CMD_MF_AUTH_KEY_A, 7, &key, &uid);
-//			if (status == MFRC522::STATUS_OK) {
-//				if (memcmp(uidByteOn, uid.uidByte, 3) == 0) {
-//					GPIO_SetBits(GPIOB, GPIO_Pin_12);
-//				} else if (memcmp(uidByteOff, uid.uidByte, 3) == 0) {
-//					GPIO_ResetBits(GPIOB, GPIO_Pin_12);
-//				}
-//				rfid.PCD_StopCrypto1();
-//			}
-//		}
-//		rfid.PCD_SoftPowerDown();
-//
-//		RTC_SetAlarm(RTC_GetCounter() + 1);
-//		RTC_WaitForLastTask();
+		rfid.PCD_Init();
+		if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()) {
+			MFRC522::Uid uid = rfid.uid;
+			MFRC522::StatusCode status;
+			status = rfid.PCD_Authenticate(MFRC522::PICC_CMD_MF_AUTH_KEY_A, 7, &key, &uid);
+			if (status == MFRC522::STATUS_OK) {
+				if (memcmp(uidByteOn, uid.uidByte, 3) == 0) {
+					GPIO_SetBits(GPIOB, GPIO_Pin_12);
+					omni.Unlock();
+				} else if (memcmp(uidByteOff, uid.uidByte, 3) == 0) {
+					GPIO_ResetBits(GPIOB, GPIO_Pin_12);
+					omni.Lock();
+				}
+				rfid.PCD_StopCrypto1();
+			}
+		}
+		rfid.PCD_SoftPowerDown();
+
+		RTC_SetAlarm(RTC_GetCounter() + 1);
+		RTC_WaitForLastTask();
 
 //		RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, DISABLE);
 //		RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, DISABLE);
 
-		// Based on http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.faqs/ka15506.html
-		// The sequence SEV WFE WFE is used to ensure sleep
-//		SCB->SCR &= ~SCB_SCR_SLEEPDEEP;
-//		__SEV();
-//		__WFE();
-//		__WFE();
-//		PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFE);
-//		PWR_EnterSTANDBYMode();
-//		SystemInit();
+		PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFE);
+//		GPIO_ReadOutputData(GPIOE);  // Somehow this prevents MemManage fault
+		SystemInit();
 	}
 }
 

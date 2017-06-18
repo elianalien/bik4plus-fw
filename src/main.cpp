@@ -12,6 +12,7 @@
 #include "Beeper.h"
 #include "MFRC522.h"
 #include "OmniLock.h"
+#include "PacmanLock.h"
 #include "Ticks.h"
 
 #include "stm32f10x.h"
@@ -138,24 +139,36 @@ int main(int argc, char* argv[])
 
 	GPIO_ReadOutputData(GPIOA);  // Somehow this nonsense prevents MemManage fault
 
-//	uint8_t uidByteOn[] = {0xE5, 0x95, 0x15};
-//	uint8_t uidByteOff[] = {0x5D, 0x0C, 0x88};
-	uint8_t uidByteOn[] = {0x8C, 0x1B, 0xDC};
-	uint8_t uidByteOff[] = {0xA2, 0x4F, 0xA0};
+	uint8_t uidByteOn[] = {0xE5, 0x95, 0x15};
+	uint8_t uidByteOff[] = {0x5D, 0x0C, 0x88};
+//	uint8_t uidByteOn[] = {0x8C, 0x1B, 0xDC};
+//	uint8_t uidByteOff[] = {0xA2, 0x4F, 0xA0};
 	MFRC522::MIFARE_Key key = {{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}};
 
-	OmniLock::HardwareConfig hw;
+//	OmniLock::HardwareConfig hw;
+//	hw.GpioMotorA = GPIOA;
+//	hw.PinMotorA = GPIO_Pin_10;
+//	hw.GpioMotorB = GPIOA;
+//	hw.PinMotorB = GPIO_Pin_11;
+//	hw.GpioSwitchStep = GPIOA;
+//	hw.PinSwitchStep = GPIO_Pin_15;
+//	hw.GpioSwitchClosed = GPIOA;
+//	hw.PinSwitchClosed = GPIO_Pin_12;
+//	OmniLock omni(hw);
+//	omni.Initialize();
+
+	PacmanLock::HardwareConfig hw;
 	hw.GpioMotorA = GPIOA;
 	hw.PinMotorA = GPIO_Pin_10;
 	hw.GpioMotorB = GPIOA;
 	hw.PinMotorB = GPIO_Pin_11;
-	hw.GpioSwitchStep = GPIOA;
-	hw.PinSwitchStep = GPIO_Pin_15;
-	hw.GpioSwitchClosed = GPIOA;
-	hw.PinSwitchClosed = GPIO_Pin_12;
-	OmniLock omni(hw);
-
-	omni.Initialize();
+	hw.GpioSwitchGateOpen = GPIOA;
+	hw.PinSwitchGateOpen = GPIO_Pin_3;
+	hw.GpioSwitchFree = GPIOA;
+	hw.PinSwitchFree = GPIO_Pin_2;
+	hw.GpioSwitchLocked = GPIOA;
+	hw.PinSwitchLocked = GPIO_Pin_1;
+	PacmanLock pacman(hw);
 
 	MFRC522 rfid(SPI1, GPIOA, GPIO_Pin_4);
 	rfid.PCD_Init();
@@ -176,13 +189,13 @@ int main(int argc, char* argv[])
 
 		if (!GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_10)) {
 			// Unlock request (from server)
-			if (omni.IsLocked()) {
+			if (pacman.IsLocked()) {
 				beeper.Beep(3, 50, 30);
-				omni.Unlock();
+				pacman.Unlock();
 			}
-		} else if (!GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_11)) {
+		} else {
 			// Lock request (from pole switch)
-			if (!omni.IsLocked()) {
+			if (!pacman.IsGateOpen() && pacman.IsFree()) {
 				rfid.PCD_Init();
 				bool tagFound = false;
 				uint32_t timeout = Ticks::Get() + Ticks::MsToTicks(500);
@@ -203,7 +216,7 @@ int main(int argc, char* argv[])
 
 				if (tagFound) {
 					GPIO_ResetBits(GPIOB, GPIO_Pin_12);
-					omni.Lock();
+					pacman.Lock();
 					beeper.BeepOnce(500);
 				} else {
 					beeper.Beep(5, 50, 30);
@@ -211,15 +224,15 @@ int main(int argc, char* argv[])
 			}
 		}
 
-		RTC_SetAlarm(RTC_GetCounter() + 1);
-		RTC_WaitForLastTask();
+//		RTC_SetAlarm(RTC_GetCounter() + 1);
+//		RTC_WaitForLastTask();
 
 //		RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, DISABLE);
 //		RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, DISABLE);
 
-		PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFE);
+//		PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFE);
 //		GPIO_ReadOutputData(GPIOE);  // Somehow this prevents MemManage fault
-		SystemInit();
+//		SystemInit();
 	}
 }
 

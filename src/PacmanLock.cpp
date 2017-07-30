@@ -71,7 +71,7 @@ bool PacmanLock::IsFree()
 
 void PacmanLock::Unlock()
 {
-	DriveMotor(-1);
+	DriveMotor(1);
 	while (!IsFree());
 	DriveMotor(0);
 }
@@ -79,8 +79,8 @@ void PacmanLock::Unlock()
 void PacmanLock::Lock()
 {
 	if (IsGateOpen()) return;
-	DriveMotor(-1);
-	while (!IsLocked());
+	DriveMotor(1);
+	while (!IsLocked() || IsFree());
 	DriveMotor(0);
 }
 

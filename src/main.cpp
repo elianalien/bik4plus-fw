@@ -169,12 +169,36 @@ int main(int argc, char* argv[])
 	hw.GpioSwitchLocked = GPIOA;
 	hw.PinSwitchLocked = GPIO_Pin_1;
 	PacmanLock pacman(hw);
+	pacman.Unlock();
 
 	MFRC522 rfid(SPI1, GPIOA, GPIO_Pin_4);
 	rfid.PCD_Init();
 
 	Beeper beeper(GPIOB, GPIO_Pin_8);
 	beeper.BeepOnce();
+
+	// RFID test
+//	while (1) {
+//		bool tagFound = false;
+//		uint32_t timeout = Ticks::Get() + Ticks::MsToTicks(500);
+//		while (!Ticks::HasElapsed(timeout) && !tagFound) {
+//			if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()) {
+//				MFRC522::Uid uid = rfid.uid;
+//				MFRC522::StatusCode status;
+//				status = rfid.PCD_Authenticate(MFRC522::PICC_CMD_MF_AUTH_KEY_A, 7, &key, &uid);
+//				if (status == MFRC522::STATUS_OK) {
+//					if (memcmp(uidByteOn, uid.uidByte, 3) == 0) {
+//						tagFound = true;
+//					}
+//					rfid.PCD_StopCrypto1();
+//				}
+//			}
+//		}
+//		if (tagFound) {
+//			beeper.BeepOnce(50);
+//		}
+//		Ticks::DelayMs(50);
+//	}
 
 	// Infinite loop
 	while (1) {
@@ -190,12 +214,13 @@ int main(int argc, char* argv[])
 		if (!GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_10)) {
 			// Unlock request (from server)
 			if (pacman.IsLocked()) {
-				beeper.Beep(3, 50, 30);
+				beeper.Beep(1, 50, 30);
 				pacman.Unlock();
+				beeper.Beep(2, 50, 30);
 			}
 		} else {
 			// Lock request (from pole switch)
-			if (!pacman.IsGateOpen() && pacman.IsFree()) {
+			if (!pacman.IsGateOpen() && !pacman.IsLocked()) {
 				rfid.PCD_Init();
 				bool tagFound = false;
 				uint32_t timeout = Ticks::Get() + Ticks::MsToTicks(500);
@@ -215,9 +240,9 @@ int main(int argc, char* argv[])
 				rfid.PCD_SoftPowerDown();
 
 				if (tagFound) {
-					GPIO_ResetBits(GPIOB, GPIO_Pin_12);
+					beeper.Beep(1, 50, 30);
 					pacman.Lock();
-					beeper.BeepOnce(500);
+					beeper.BeepOnce(300);
 				} else {
 					beeper.Beep(5, 50, 30);
 				}

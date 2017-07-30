@@ -139,10 +139,14 @@ int main(int argc, char* argv[])
 
 	GPIO_ReadOutputData(GPIOA);  // Somehow this nonsense prevents MemManage fault
 
-	uint8_t uidByteOn[] = {0xE5, 0x95, 0x15};
-	uint8_t uidByteOff[] = {0x5D, 0x0C, 0x88};
-//	uint8_t uidByteOn[] = {0x8C, 0x1B, 0xDC};
-//	uint8_t uidByteOff[] = {0xA2, 0x4F, 0xA0};
+	uint8_t uidWhiteList[][3] =
+	{
+			{0xE5, 0x95, 0x15},
+			{0x5D, 0x0C, 0x88},
+			{0x8C, 0x1B, 0xDC},
+			{0xA2, 0x4F, 0xA0}
+	};
+	uint8_t whiteListCount = sizeof(uidWhiteList) / sizeof(uidWhiteList[0]);
 	MFRC522::MIFARE_Key key = {{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}};
 
 //	OmniLock::HardwareConfig hw;
@@ -225,16 +229,21 @@ int main(int argc, char* argv[])
 				bool tagFound = false;
 				uint32_t timeout = Ticks::Get() + Ticks::MsToTicks(500);
 				while (!Ticks::HasElapsed(timeout) && !tagFound) {
-					if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()) {
-						MFRC522::Uid uid = rfid.uid;
-						MFRC522::StatusCode status;
+					if (!(rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()))
+						continue;
+
+					MFRC522::Uid uid = rfid.uid;
+					MFRC522::StatusCode status;
+					for (unsigned int idx = 0; idx < whiteListCount; idx++) {
+						if (memcmp(uidWhiteList[idx], uid.uidByte, 3) != 0)
+							continue;
+
 						status = rfid.PCD_Authenticate(MFRC522::PICC_CMD_MF_AUTH_KEY_A, 7, &key, &uid);
 						if (status == MFRC522::STATUS_OK) {
-							if (memcmp(uidByteOn, uid.uidByte, 3) == 0) {
-								tagFound = true;
-							}
+							tagFound = true;
 							rfid.PCD_StopCrypto1();
 						}
+						break;
 					}
 				}
 				rfid.PCD_SoftPowerDown();

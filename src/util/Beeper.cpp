@@ -1,5 +1,5 @@
 /* bik4plus-fw, a firmware for BIK4+ Bike Sharing Lock
- * Ticks.cpp
+ * Beeper.cpp
  *
  * Copyright (C) 2017 Tuwuh Sarwoprasojo
  *
@@ -17,45 +17,38 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "Beeper.h"
 #include "Ticks.h"
+#include "stm32f10x.h"
 
-void Ticks::Init()
+Beeper::Beeper(GPIO_TypeDef* pGpio, uint16_t pin):
+	m_pGpio(pGpio),
+	m_Pin(pin)
 {
-	if (!(CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk)) {
-		CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+	GPIO_InitTypeDef GPIO_InitStruct;
+	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_Out_PP;
+	GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStruct.GPIO_Pin = m_Pin;
+	GPIO_Init(m_pGpio, &GPIO_InitStruct);
+
+	GPIO_ResetBits(m_pGpio, m_Pin);
+}
+
+Beeper::~Beeper()
+{
+}
+
+void Beeper::BeepOnce(uint32_t durationMs)
+{
+	GPIO_SetBits(m_pGpio, m_Pin);
+	Ticks::DelayMs(durationMs);
+	GPIO_ResetBits(m_pGpio, m_Pin);
+}
+
+void Beeper::Beep(unsigned int count, uint32_t onMs, uint32_t offMs)
+{
+	for (unsigned int i = 0; i < count; i++) {
+		BeepOnce(onMs);
+		Ticks::DelayMs(offMs);
 	}
-	DWT->CYCCNT = 0;
-	DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
-}
-
-uint32_t Ticks::Get()
-{
-	return DWT->CYCCNT;
-}
-
-bool Ticks::HasElapsed(int32_t ticks)
-{
-	return (((int32_t) (Get()) - ticks) >= 0);
-}
-
-void Ticks::DelayUs(uint32_t us)
-{
-	int32_t tp = Get() + UsToTicks(us);
-	while (!HasElapsed(tp));
-}
-
-void Ticks::DelayMs(uint32_t ms)
-{
-	int32_t tp = Get() + MsToTicks(ms);
-	while (!HasElapsed(tp));
-}
-
-uint32_t Ticks::UsToTicks(uint32_t us)
-{
-	return us * (SystemCoreClock / 1000000);
-}
-
-uint32_t Ticks::MsToTicks(uint32_t ms)
-{
-	return ms * (SystemCoreClock / 1000);
 }
